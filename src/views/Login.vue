@@ -1,6 +1,14 @@
 <script setup>
 import { reactive, ref, computed } from 'vue'
+import { useRouter } from 'vue-router'  // ✅ 添加
 import { ElMessage } from 'element-plus'
+import request from '../api/index'  // ✅ 导入 request
+
+// 定义 router
+const router = useRouter()
+
+// 定义 loading
+const loading = ref(false)
 
 // 使用 reactive 定义响应式对象
 const userinfo = reactive({
@@ -35,11 +43,52 @@ const handleLogin = async () => {
   if (!loginFormRef.value) return
 
   try {
+    // 表单校验
     await loginFormRef.value.validate()
-    ElMessage.success('登录成功')
-    console.log('用户信息:', userinfo)
+
+    // 显示加载状态
+    loading.value = true
+
+    // ✅ 调用登录接口
+    const res = await request('/api/auth/login', {
+      username: userinfo.username,
+      password: userinfo.password
+    }, 'post')
+
+    console.log('登录响应:', res)
+
+    // 判断登录是否成功
+    if (res.code === 0 || res.code === 200) {
+      // 保存 token
+      if (res.data?.token) {
+        localStorage.setItem('token', res.data.token)
+      }
+
+      // 保存用户信息（可选）
+      if (res.data?.userInfo) {
+        localStorage.setItem('userInfo', JSON.stringify(res.data.userInfo))
+      }
+
+      ElMessage.success('登录成功')
+      console.log('用户信息:', userinfo)
+
+      // 跳转到首页
+      router.push('/')
+    } else {
+      ElMessage.error(res.message || '登录失败，请检查用户名和密码')
+    }
   } catch (error) {
-    ElMessage.error('请完善表单信息')
+    // 表单校验失败或接口报错
+    if (error?.response?.data?.message) {
+      ElMessage.error(error.response.data.message)
+    } else if (error?.message) {
+      ElMessage.error(error.message)
+    } else {
+      ElMessage.error('请完善表单信息')
+    }
+    console.error('登录失败:', error)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -71,6 +120,7 @@ const resetForm = () => {
             placeholder="请输入用户名"
             prefix-icon="Avatar"
             clearable
+            @keyup.enter="handleLogin"
           />
         </el-form-item>
 
@@ -81,6 +131,7 @@ const resetForm = () => {
             prefix-icon="Lock"
             show-password
             clearable
+            @keyup.enter="handleLogin"
           />
         </el-form-item>
 
@@ -89,7 +140,8 @@ const resetForm = () => {
             <el-button
               type="primary"
               style="flex: 1; border-radius: 20px;"
-              :disabled="!isFormValid"
+              :disabled="!isFormValid || loading"
+              :loading="loading"
               @click="handleLogin"
             >
               登录

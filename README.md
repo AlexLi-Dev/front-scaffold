@@ -194,3 +194,138 @@ app.mount('#app')
 
 ```
 
+
+## mock数据
+## 1. **使用 Vite 插件 vite-plugin-mock（推荐）**
+
+### 安装
+
+bash
+
+```
+npm install vite-plugin-mock mockjs -D
+```
+
+
+
+### 配置 vite.config.js
+
+javascript
+
+```
+// vite.config.js
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { viteMockServe } from 'vite-plugin-mock'
+
+export default defineConfig({
+  plugins: [
+    vue(),
+    viteMockServe({
+      mockPath: 'mock', // mock 文件存放目录
+      enable: true, // 是否启用
+      logger: true, // 是否打印日志
+    })
+  ]
+})
+```
+
+
+
+### 创建 mock 文件
+
+javascript
+
+```
+// mock/auth.js
+export default [
+  // 登录接口
+  {
+    url: '/api/auth/login',
+    method: 'post',
+    response: ({ body }) => {
+      const { username, password } = body
+      
+      // 模拟登录验证
+      if (username === 'admin' && password === '123456') {
+        return {
+          code: 0,
+          message: '登录成功',
+          data: {
+            token: 'mock-token-' + Date.now(),
+            userInfo: {
+              id: 1,
+              username: 'admin',
+              name: '管理员',
+              role: 'admin'
+            }
+          }
+        }
+      } else {
+        return {
+          code: 401,
+          message: '用户名或密码错误',
+          data: null
+        }
+      }
+    }
+  },
+  
+  // 获取用户信息
+  {
+    url: '/api/user/info',
+    method: 'get',
+    response: () => {
+      return {
+        code: 0,
+        message: 'success',
+        data: {
+          id: 1,
+          username: 'admin',
+          name: '管理员',
+          role: 'admin',
+          avatar: 'https://avatars.githubusercontent.com/u/1'
+        }
+      }
+    }
+  }
+]
+```
+
+
+
+javascript
+
+```
+// mock/user.js
+export default [
+  {
+    url: '/api/user/list',
+    method: 'get',
+    response: ({ query }) => {
+      const { page = 1, pageSize = 10 } = query
+      
+      // 使用 Mock.js 生成数据
+      const list = Array.from({ length: pageSize }, (_, index) => ({
+        id: (page - 1) * pageSize + index + 1,
+        name: `用户${index + 1}`,
+        age: Math.floor(Math.random() * 30) + 20,
+        email: `user${index + 1}@example.com`,
+        status: ['active', 'inactive'][Math.floor(Math.random() * 2)]
+      }))
+      
+      return {
+        code: 0,
+        message: 'success',
+        data: {
+          list,
+          total: 100,
+          page,
+          pageSize
+        }
+      }
+    }
+  }
+]
+```
+
