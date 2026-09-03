@@ -29,14 +29,27 @@ const router = createRouter({
 })
 
 // 路由守卫
-// router.beforeEach((to, from, next) => {
-//     const token = localStorage.getItem('token')
-//
-//     if (token) {
-//         next()
-//     } else {
-//         next('/login')
-//     }
-// })
+// 路由守卫
+router.beforeEach((to, from, next) => {
+    const token = localStorage.getItem('token')
 
+    // 需要登录的页面
+    if (to.meta.requiresAuth) {
+        if (token) {
+            next() // 有token，放行
+        } else {
+            next({
+                path: '/login',
+                query: { redirect: to.fullPath } // 记录目标路径，登录后跳转
+            })
+        }
+    } else {
+        // 不需要登录的页面
+        if (to.path === '/login' && token) {
+            next('/') // 已登录，跳转首页
+        } else {
+            next() // 放行
+        }
+    }
+})
 export default router
