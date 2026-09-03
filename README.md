@@ -195,7 +195,93 @@ app.mount('#app')
 ```
 
 
-## mock数据
+
+
+
+
+
+Compute 与 watch 对比
+
+## **computed 方式（推荐）**
+
+javascript
+
+```
+const isFormValid = computed(() => {
+  return userinfo.username.trim() && userinfo.password.trim()
+})
+```
+
+
+
+**优点：**
+
+- ✅ 代码简洁，语义清晰
+- ✅ 自动缓存，依赖变化时才重新计算
+- ✅ 纯函数，无副作用
+- ✅ 性能更好（缓存机制）
+
+**缺点：**
+
+- ❌ 只能同步计算，不支持异步
+
+------
+
+## **watch 方式**
+
+javascript
+
+```
+const isFormValid = ref(false)
+
+watch(
+  () => [userinfo.username, userinfo.password],
+  ([username, password]) => {
+    isFormValid.value = username.trim() && password.trim()
+  },
+  { immediate: true }
+)
+```
+
+
+
+**优点：**
+
+- ✅ 支持异步操作
+- ✅ 可以执行副作用（如请求接口）
+- ✅ 更灵活，可以做复杂逻辑
+
+**缺点：**
+
+- ❌ 代码冗余
+- ❌ 需要额外定义 ref
+- ❌ 没有缓存机制
+
+------
+
+## **对比总结**
+
+| 特性       | computed | watch            |
+| :--------- | :------- | :--------------- |
+| 缓存       | ✅ 有     | ❌ 无             |
+| 代码简洁度 | ✅ 简洁   | ❌ 繁琐           |
+| 异步支持   | ❌ 不支持 | ✅ 支持           |
+| 副作用     | ❌ 不建议 | ✅ 适合           |
+| 性能       | ✅ 更好   | ⚠️ 一般           |
+| 适用场景   | 派生数据 | 响应变化执行操作 |
+
+
+
+
+
+
+
+
+
+# mock数据
+
+有以下几种方式 mock 接口：
+
 ## 1. **使用 Vite 插件 vite-plugin-mock（推荐）**
 
 ### 安装
@@ -327,5 +413,225 @@ export default [
     }
   }
 ]
+```
+
+
+
+------
+
+## 2. **使用 Mock.js 手动拦截（简单）**
+
+javascript
+
+```
+// src/mock/index.js
+import Mock from 'mockjs'
+
+// 配置 mock
+Mock.setup({
+  timeout: '200-600' // 模拟延迟
+})
+
+// 登录接口
+Mock.mock('/api/auth/login', 'post', (options) => {
+  const { username, password } = JSON.parse(options.body)
+  
+  if (username === 'admin' && password === '123456') {
+    return {
+      code: 0,
+      message: '登录成功',
+      data: {
+        token: 'mock-token-' + Date.now(),
+        userInfo: {
+          id: 1,
+          username: 'admin',
+          name: '管理员'
+        }
+      }
+    }
+  } else {
+    return {
+      code: 401,
+      message: '用户名或密码错误'
+    }
+  }
+})
+
+// 获取用户信息
+Mock.mock('/api/user/info', 'get', {
+  code: 0,
+  message: 'success',
+  data: {
+    id: 1,
+    username: 'admin',
+    name: '管理员',
+    avatar: 'https://avatars.githubusercontent.com/u/1'
+  }
+})
+
+// 使用 Mock.js 生成随机数据
+Mock.mock('/api/user/list', 'get', {
+  code: 0,
+  message: 'success',
+  'data|10-20': [{
+    'id|+1': 1,
+    'name': '@cname',
+    'age|18-60': 1,
+    'email': '@email',
+    'phone': /^1[3-9]\d{9}$/,
+    'address': '@county(true)',
+    'createTime': '@datetime'
+  }]
+})
+```
+
+
+
+### 在 main.js 中导入
+
+javascript
+
+```
+// main.js
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+
+// 开发环境启用 mock
+if (import.meta.env.MODE === 'development') {
+  import('./mock')
+}
+
+const app = createApp(App)
+app.use(router)
+app.use(ElementPlus)
+app.mount('#app')
+```
+
+
+
+
+
+
+
+
+
+## 拦截器处理 token
+
+![image-20260904010814844](/Users/mac/Library/Application Support/typora-user-images/image-20260904010814844.png)
+
+------
+
+代码如下：
+
+```
+// src/utils/request.js
+import axios from 'axios'
+import { CONFIG } from '../config/api.js'
+
+// 创建 axios 实例
+const instance = axios.create({
+    timeout: 5000,
+    headers: {
+        'Content-Type': 'application/json;charset=utf-8'
+    }
+})
+
+// 请求拦截器
+// instance.interceptors.request.use(
+//     config => {
+//         const token = localStorage.getItem('token')
+//         if (token) {
+//             // 使用配置中的 token 名称
+//             config.headers[CONFIG.TOKEN_NAME] = `${CONFIG.TOKEN_PREFIX}${token}`
+//         }
+//         return config
+//     },
+//     error => {
+//         console.error('请求拦截器错误:', error)
+//         return Promise.reject(error)
+//     }
+// )
+instance.interceptors.request.use(
+    config => {
+        const token = localStorage.getItem('token')
+        console.log('🔵 拦截器执行')
+        console.log('token:', token)
+
+        if (token) {
+            config.headers[CONFIG.TOKEN_NAME] = `${CONFIG.TOKEN_PREFIX}${token}`
+            console.log('✅ 添加 Authorization 头:', config.headers[CONFIG.TOKEN_NAME])
+        } else {
+            console.warn('⚠️ 没有 token')
+        }
+
+        console.log('完整请求头:', config.headers)
+        return config
+    },
+    error => {
+        console.error('请求拦截器错误:', error)
+        return Promise.reject(error)
+    }
+)
+
+
+
+
+// 响应拦截器
+instance.interceptors.response.use(
+    response => {
+        // 直接返回数据
+        return response.data
+    },
+    error => {
+        // 统一错误处理
+        if (error.response) {
+            const { status, data } = error.response
+            console.error(`请求失败 [${status}]:`, data?.message || error.message)
+
+            // 401 未授权，跳转登录
+            if (status === 401) {
+                localStorage.removeItem('token')
+                localStorage.removeItem('userInfo')
+                window.location.href = '/#/login'
+            }
+        } else if (error.code === 'ECONNABORTED') {
+            console.error('请求超时')
+        } else {
+            console.error('网络错误:', error.message)
+        }
+
+        return Promise.reject(error)
+    }
+)
+
+// 封装请求函数
+const request = (url = '', data = {}, method = 'get', timeout = 5000) => {
+    console.log('使用封装函数去处理请求')
+
+    return new Promise((resolve, reject) => {
+        console.log('使用axios请求接口')
+
+        const methodLower = method.toLowerCase()
+
+        // GET 和 DELETE 用 params，其他用 data
+        const isParamsMethod = methodLower === 'get' || methodLower === 'delete'
+
+        instance({
+            method: methodLower,
+            url: url,
+            timeout: timeout,
+            [isParamsMethod ? 'params' : 'data']: data
+        }).then((response) => {
+            resolve(response)
+        }).catch((error) => {
+            reject(error)
+        })
+    })
+}
+
+export default request
 ```
 
