@@ -1,8 +1,8 @@
 <script setup>
 import { reactive, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'  // ✅ 添加
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import request from '../api/index'  // ✅ 导入 request
+import { login } from '../api/login'  // ✅ 导入 login 方法
 
 // 定义 router
 const router = useRouter()
@@ -50,10 +50,10 @@ const handleLogin = async () => {
     loading.value = true
 
     // ✅ 调用登录接口
-    const res = await request('/api/auth/login', {
+    const res = await login({
       username: userinfo.username,
       password: userinfo.password
-    }, 'post')
+    })
 
     console.log('登录响应:', res)
 

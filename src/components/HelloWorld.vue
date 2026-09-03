@@ -4,58 +4,59 @@
     <h1>🚀 蓝鲸K8s运维平台</h1>
     <p>欢迎使用蓝鲸K8s运维平台</p>
 
-    <!-- 根据登录状态显示不同按钮 -->
     <div class="button-group">
-      <el-button
-        v-if="!isLoggedIn"
-        type="primary"
-        @click="goToLogin"
-        style="margin-top: 20px;"
-      >
-        登录
-      </el-button>
-
-      <div v-else class="user-info">
-        <el-tag type="success" size="large">
-          {{ username }} 已登录
-        </el-tag>
-        <el-button
-          type="danger"
-          @click="handleLogout"
-          style="margin-top: 20px; margin-left: 10px;"
-        >
-          退出登录
+      <template v-if="!isLoggedIn">
+        <el-button type="primary" @click="goToLogin">
+          登录
         </el-button>
-      </div>
+      </template>
+
+      <template v-else>
+        <div class="user-info">
+          <el-tag type="success" size="large" effect="plain">
+            👋 {{ username }}
+          </el-tag>
+          <el-button type="danger" plain @click="handleLogout">
+            退出登录
+          </el-button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { logout } from '../api/login'  // ✅ 导入 logout
 
 const router = useRouter()
-const isLoggedIn = ref(false)
-const username = ref('')
+
+// 状态
+const token = ref('')
+const userInfo = ref(null)
+
+// 计算属性
+const isLoggedIn = computed(() => !!token.value && !!userInfo.value)
+const username = computed(() => {
+  if (!userInfo.value) return ''
+  return userInfo.value.username || userInfo.value.name || '用户'
+})
 
 // 检查登录状态
 const checkLoginStatus = () => {
-  const token = localStorage.getItem('token')
-  const userInfo = localStorage.getItem('userInfo')
+  token.value = localStorage.getItem('token') || ''
 
-  if (token && userInfo) {
-    isLoggedIn.value = true
+  const info = localStorage.getItem('userInfo')
+  if (info) {
     try {
-      const info = JSON.parse(userInfo)
-      username.value = info.username || info.name || '用户'
+      userInfo.value = JSON.parse(info)
     } catch {
-      username.value = '用户'
+      userInfo.value = null
     }
   } else {
-    isLoggedIn.value = false
-    username.value = ''
+    userInfo.value = null
   }
 }
 
@@ -64,30 +65,32 @@ const goToLogin = () => {
   router.push('/login')
 }
 
-// 退出登录
-const handleLogout = () => {
-  ElMessageBox.confirm('确认退出登录吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    // 清除本地存储
-    localStorage.removeItem('token')
-    localStorage.removeItem('userInfo')
-    localStorage.removeItem('username')
+// ✅ 退出登录 - 简化版，清理逻辑在 logout 中
+const handleLogout = async () => {
+  try {
+    await ElMessageBox.confirm('确认退出登录吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
 
-    // 更新状态
-    isLoggedIn.value = false
-    username.value = ''
+    // ✅ 调用 logout，内部自动清理数据
+    await logout()
+
+    // ✅ 更新状态
+    token.value = ''
+    userInfo.value = null
 
     ElMessage.success('已退出登录')
     router.push('/login')
-  }).catch(() => {
-    ElMessage.info('已取消退出')
-  })
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('退出登录失败:', error)
+      ElMessage.error('退出登录失败，请重试')
+    }
+  }
 }
 
-// 组件挂载时检查登录状态
 onMounted(() => {
   checkLoginStatus()
 })
@@ -97,6 +100,8 @@ onMounted(() => {
 .hello {
   text-align: center;
   padding: 40px 20px;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 h1 {
@@ -108,6 +113,7 @@ h1 {
 p {
   color: #666;
   font-size: 16px;
+  margin-bottom: 20px;
 }
 
 .button-group {
@@ -118,12 +124,19 @@ p {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 :deep(.el-tag) {
   font-size: 16px;
-  padding: 10px 20px;
+  padding: 10px 24px;
+  border-radius: 20px;
+}
+
+:deep(.el-button) {
+  border-radius: 20px;
+  padding: 12px 28px;
+  font-weight: 500;
 }
 </style>
