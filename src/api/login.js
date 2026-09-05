@@ -1,6 +1,6 @@
 // src/api/login.js
 import request from './index'
-import { API_CONFIG } from '../config/api'
+import { API_CONFIG, CONFIG } from '../config/api'
 
 /**
  * 用户登录
@@ -23,14 +23,14 @@ export const logout = async () => {
         const res = await request(API_CONFIG.logoutApi, {}, 'post')
 
         // 清理本地存储
-        localStorage.removeItem('token')
+        localStorage.removeItem(CONFIG.TOKEN_NAME)
         localStorage.removeItem('userInfo')
         localStorage.removeItem('username')
 
         return res
     } catch (error) {
         // 即使接口失败，也清理本地数据
-        localStorage.removeItem('token')
+        localStorage.removeItem(CONFIG.TOKEN_NAME)
         localStorage.removeItem('userInfo')
         localStorage.removeItem('username')
         throw error

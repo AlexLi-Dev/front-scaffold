@@ -10,24 +10,9 @@ const instance = axios.create({
     }
 })
 
-// 请求拦截器
-// instance.interceptors.request.use(
-//     config => {
-//         const token = localStorage.getItem('token')
-//         if (token) {
-//             // 使用配置中的 token 名称
-//             config.headers[CONFIG.TOKEN_NAME] = `${CONFIG.TOKEN_PREFIX}${token}`
-//         }
-//         return config
-//     },
-//     error => {
-//         console.error('请求拦截器错误:', error)
-//         return Promise.reject(error)
-//     }
-// )
 instance.interceptors.request.use(
     config => {
-        const token = localStorage.getItem('token')
+        const token = localStorage.getItem(CONFIG.TOKEN_NAME)
         console.log('🔵 拦截器执行')
         console.log('token:', token)
 
@@ -64,7 +49,7 @@ instance.interceptors.response.use(
 
             // 401 未授权，跳转登录
             if (status === 401) {
-                localStorage.removeItem('token')
+                localStorage.removeItem(CONFIG.TOKEN_NAME)
                 localStorage.removeItem('userInfo')
                 window.location.href = '/#/login'
             }

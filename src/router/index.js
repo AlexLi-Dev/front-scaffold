@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory,createWebHashHistory } from 'vue-router'
 import HelloWorld from '../components/HelloWorld.vue'
+import { CONFIG } from '../config/api.js'
 // import Login from '../views/Login.vue'
 const Login = ()=>import('../views/Login.vue')
 
@@ -31,7 +32,7 @@ const router = createRouter({
 // 路由守卫
 // 路由守卫
 router.beforeEach((to, from, next) => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem(CONFIG.TOKEN_NAME)
 
     // 需要登录的页面
     if (to.meta.requiresAuth) {

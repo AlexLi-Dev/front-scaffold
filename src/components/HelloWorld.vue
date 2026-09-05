@@ -30,6 +30,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { logout } from '../api/login'  // ✅ 导入 logout
+import { CONFIG } from '../config/api.js'
 
 const router = useRouter()
 
@@ -46,7 +47,7 @@ const username = computed(() => {
 
 // 检查登录状态
 const checkLoginStatus = () => {
-  token.value = localStorage.getItem('token') || ''
+  token.value = localStorage.getItem(CONFIG.TOKEN_NAME) || ''
 
   const info = localStorage.getItem('userInfo')
   if (info) {

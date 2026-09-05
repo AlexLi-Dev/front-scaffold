@@ -3,6 +3,7 @@ import { reactive, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login } from '../api/login'  // ✅ 导入 login 方法
+import { CONFIG } from '../config/api.js'
 
 // 定义 router
 const router = useRouter()
@@ -33,9 +34,8 @@ const rules = reactive({
   ]
 })
 
-// 计算属性：判断表单是否可提交
 const isFormValid = computed(() => {
-  return userinfo.username.trim() && userinfo.password.trim()
+  return Boolean(userinfo.username.trim() && userinfo.password.trim())
 })
 
 // 登录方法
@@ -61,7 +61,8 @@ const handleLogin = async () => {
     if (res.code === 0 || res.code === 200) {
       // 保存 token
       if (res.data?.token) {
-        localStorage.setItem('token', res.data.token)
+        localStorage.removeItem('token')
+        localStorage.setItem(CONFIG.TOKEN_NAME, res.data.token)
       }
 
       // 保存用户信息（可选）
