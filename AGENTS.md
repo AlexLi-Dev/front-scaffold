@@ -31,6 +31,8 @@ npm run preview
 
 ```text
 front-scaffold/
+├── docs/
+│   └── design/           # 按功能归档设计方案和重要决策
 ├── mock/                 # 开发环境 Mock 接口
 │   ├── auth.js           # 登录、退出、用户信息
 │   └── user.js           # 用户列表
@@ -40,15 +42,21 @@ front-scaffold/
 │   │   ├── index.js      # 请求封装、请求/响应拦截器
 │   │   └── login.js      # 认证登陆相关接口
 │   ├── assets/           # 经 Vite 处理的图片和资源
-│   ├── components/       # 可复用组件；当前首页组件也暂放在这里
+│   ├── components/       # 至少被两个业务页面复用的通用组件
 │   ├── config/           # API 地址、Token Header 等配置
 │   ├── router/           # 路由表和全局路由守卫
 │   ├── store/            # Pinia store
 │   ├── views/            # 路由级页面
+│   │   ├── dashboard/
+│   │   │   └── Index.vue # 集群总览业务页面
+│   │   └── layout/
+│   │       ├── layout.vue  # Header、Aside、Main、Footer 的组合入口
+│   │       └── components/ # 四个固定布局区域组件
 │   ├── App.vue           # 根组件，只承载 RouterView 和全局基础样式
 │   ├── main.js           # 应用启动、插件和全局图标注册
 │   └── style.css         # 全局样式
 ├── vite.config.js        # Vue 与 Mock 插件配置
+├── CHANGELOG.md          # 所有功能变化的统一变更记录
 └── package.json
 ```
 
@@ -79,7 +87,11 @@ password: 123456
 - 使用 Vue 3 Composition API 和 `<script setup>`，不要新增 Options API 组件。
 - 保持单文件组件顺序为 `<script setup>`、`<template>`、`<style scoped>`。
 - 延续当前 JavaScript 代码风格；只有用户明确要求时才引入 TypeScript。
-- 路由级组件放在 `src/views/`，可复用 UI 放在 `src/components/`。
+- 路由级应用外壳由 `src/views/layout/layout.vue` 统一编排，且只负责组合 `Header.vue`、`Aside.vue`、`Main.vue`、`Footer.vue`、必要的共享布局状态和区域事件协调。
+- `Header.vue` 用于页头内容的增删改查；`Aside.vue` 用于用户侧边菜单的增删改查；`Main.vue` 用于主内容区域及 `RouterView` 出口；`Footer.vue` 用于页脚内容的增删改查。
+- 具体业务页面按领域放在 `src/views/<业务域>/`；页面私有组件放在该业务目录的 `components/`，至少被两个业务页面复用后再提升到全局 `src/components/`。
+- 跨组件的少量通信优先使用 props/emits；状态确实跨页面或跨业务域共享时才引入 Pinia。API 按业务域拆分，不在展示组件中直接创建请求客户端。
+- `src/views/layout/layout.vue` 以及其 `components/` 下的 `Header.vue`、`Aside.vue`、`Main.vue`、`Footer.vue` 是正式布局文件，必须长期保留，不得删除、改名或移动。
 - 页面组件以组合和数据编排为主。功能出现多个独立区块或复杂副作用时，拆分子组件或提取到 `src/composables/`。
 - 组件文件使用 PascalCase；组合式函数使用 `useXxx` 命名。
 - Props 只读，默认采用 props 向下、事件向上的数据流；不要在子组件直接修改父级状态。
@@ -132,6 +144,13 @@ password: 123456
 - 保持修改范围贴合任务，不要顺手整理无关格式、备份文件或脚手架资源。
 - 工作区可能包含用户未提交的修改；先运行 `git status --short`，保留并兼容这些修改。
 - 不要使用 `git reset --hard`、`git checkout --` 或其他会丢失用户工作的命令。
+- 每一次功能新增、行为调整、缺陷修复或功能移除，都必须在同一次修改中更新根目录 `CHANGELOG.md` 的 `[Unreleased]` 区域。
+- Changelog 条目按 `Added`、`Changed`、`Fixed`、`Removed`、`Security` 分类，描述用户可感知的结果，不要堆砌实现细节；不得覆盖或改写已有历史版本记录。
+- 每个新功能或会改变既有行为的功能调整，都必须在实现前或实现过程中，将设计归档到 `docs/design/` 下的独立 Markdown 文件。
+- 设计文件命名使用 `YYYY-MM-DD-功能短名.md`；同一功能后续迭代优先更新原设计文件的“变更记录”，不要为微小修改重复创建文件。
+- 设计归档至少包含：背景、目标、非目标、方案、数据或状态流、接口与路由影响、异常处理、验证方案、变更记录。不适用的章节需要明确写“无”。
+- 纯文案、注释、格式整理或不改变行为的依赖锁文件更新，可不新建设计文件，但仍应在确有用户影响时更新 Changelog。
+- 未同步 Changelog 和必要设计归档的功能修改视为未完成，不得在最终回复中宣称任务已经完整交付。
 - 涉及登录、路由或 Mock 的修改，应在浏览器中验证至少以下路径：
   - 空输入和单字段输入时按钮状态正确。
   - `admin / 123456` 登录成功并进入首页。

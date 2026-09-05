@@ -1,10 +1,8 @@
-import { createRouter, createWebHistory,createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import HelloWorld from '../components/HelloWorld.vue'
 import { CONFIG } from '../config/api.js'
-// import Login from '../views/Login.vue'
 const Login = ()=>import('../views/Login.vue')
-
-const listRoutes={}
+const Layout = ()=>import('../views/layout/layout.vue')
 
 const routes = [
     {
@@ -18,6 +16,12 @@ const routes = [
         path: '/login',
         // name: 'Login',
         component: Login
+    },
+    //首页
+    {
+        path: '/index',
+        component: Layout,
+        meta: { requiresAuth: true },
     }
 ]
 
@@ -28,8 +32,6 @@ const router = createRouter({
     history: createWebHashHistory(),
     routes: routes,
 })
-
-// 路由守卫
 // 路由守卫
 router.beforeEach((to, from, next) => {
     const token = localStorage.getItem(CONFIG.TOKEN_NAME)
@@ -47,7 +49,7 @@ router.beforeEach((to, from, next) => {
     } else {
         // 不需要登录的页面
         if (to.path === '/login' && token) {
-            next('/') // 已登录，跳转首页
+            next('/index') // 已登录，跳转首页
         } else {
             next() // 放行
         }

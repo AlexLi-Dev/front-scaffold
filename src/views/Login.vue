@@ -74,7 +74,7 @@ const handleLogin = async () => {
       console.log('用户信息:', userinfo)
 
       // 跳转到首页
-      router.push('/')
+      router.push('/index')
     } else {
       ElMessage.error(res.message || '登录失败，请检查用户名和密码')
     }
